@@ -4,12 +4,6 @@ var app = (function () {
     'use strict';
 
     function noop() { }
-    function assign(tar, src) {
-        // @ts-ignore
-        for (const k in src)
-            tar[k] = src[k];
-        return tar;
-    }
     function add_location(element, file, line, column, char) {
         element.__svelte_meta = {
             loc: { file, line, column, char }
@@ -30,63 +24,8 @@ var app = (function () {
     function safe_not_equal(a, b) {
         return a != a ? b == b : a !== b || ((a && typeof a === 'object') || typeof a === 'function');
     }
-    function create_slot(definition, ctx, $$scope, fn) {
-        if (definition) {
-            const slot_ctx = get_slot_context(definition, ctx, $$scope, fn);
-            return definition[0](slot_ctx);
-        }
-    }
-    function get_slot_context(definition, ctx, $$scope, fn) {
-        return definition[1] && fn
-            ? assign($$scope.ctx.slice(), definition[1](fn(ctx)))
-            : $$scope.ctx;
-    }
-    function get_slot_changes(definition, $$scope, dirty, fn) {
-        if (definition[2] && fn) {
-            const lets = definition[2](fn(dirty));
-            if ($$scope.dirty === undefined) {
-                return lets;
-            }
-            if (typeof lets === 'object') {
-                const merged = [];
-                const len = Math.max($$scope.dirty.length, lets.length);
-                for (let i = 0; i < len; i += 1) {
-                    merged[i] = $$scope.dirty[i] | lets[i];
-                }
-                return merged;
-            }
-            return $$scope.dirty | lets;
-        }
-        return $$scope.dirty;
-    }
-    function update_slot(slot, slot_definition, ctx, $$scope, dirty, get_slot_changes_fn, get_slot_context_fn) {
-        const slot_changes = get_slot_changes(slot_definition, $$scope, dirty, get_slot_changes_fn);
-        if (slot_changes) {
-            const slot_context = get_slot_context(slot_definition, ctx, $$scope, get_slot_context_fn);
-            slot.p(slot_context, slot_changes);
-        }
-    }
-    function exclude_internal_props(props) {
-        const result = {};
-        for (const k in props)
-            if (k[0] !== '$')
-                result[k] = props[k];
-        return result;
-    }
-    function compute_rest_props(props, keys) {
-        const rest = {};
-        keys = new Set(keys);
-        for (const k in props)
-            if (!keys.has(k) && k[0] !== '$')
-                rest[k] = props[k];
-        return rest;
-    }
     function action_destroyer(action_result) {
         return action_result && is_function(action_result.destroy) ? action_result.destroy : noop;
-    }
-
-    function append(target, node) {
-        target.appendChild(node);
     }
     function insert(target, node, anchor) {
         target.insertBefore(node, anchor || null);
@@ -94,54 +33,11 @@ var app = (function () {
     function detach(node) {
         node.parentNode.removeChild(node);
     }
-    function element(name) {
-        return document.createElement(name);
-    }
     function svg_element(name) {
         return document.createElementNS('http://www.w3.org/2000/svg', name);
     }
-    function text(data) {
-        return document.createTextNode(data);
-    }
-    function space() {
-        return text(' ');
-    }
-    function listen(node, event, handler, options) {
-        node.addEventListener(event, handler, options);
-        return () => node.removeEventListener(event, handler, options);
-    }
-    function attr(node, attribute, value) {
-        if (value == null)
-            node.removeAttribute(attribute);
-        else if (node.getAttribute(attribute) !== value)
-            node.setAttribute(attribute, value);
-    }
-    function set_attributes(node, attributes) {
-        // @ts-ignore
-        const descriptors = Object.getOwnPropertyDescriptors(node.__proto__);
-        for (const key in attributes) {
-            if (attributes[key] == null) {
-                node.removeAttribute(key);
-            }
-            else if (key === 'style') {
-                node.style.cssText = attributes[key];
-            }
-            else if (key === '__value') {
-                node.value = node[key] = attributes[key];
-            }
-            else if (descriptors[key] && descriptors[key].set) {
-                node[key] = attributes[key];
-            }
-            else {
-                attr(node, key, attributes[key]);
-            }
-        }
-    }
     function children(element) {
         return Array.from(element.childNodes);
-    }
-    function toggle_class(element, name, toggle) {
-        element.classList[toggle ? 'add' : 'remove'](name);
     }
     function custom_event(type, detail) {
         const e = document.createEvent('CustomEvent');
@@ -152,15 +48,6 @@ var app = (function () {
     let current_component;
     function set_current_component(component) {
         current_component = component;
-    }
-    // TODO figure out if we still want to support
-    // shorthand events, or if we want to implement
-    // a real bubbling mechanism
-    function bubble(component, event) {
-        const callbacks = component.$$.callbacks[event.type];
-        if (callbacks) {
-            callbacks.slice().forEach(fn => fn(event));
-        }
     }
 
     const dirty_components = [];
@@ -248,40 +135,6 @@ var app = (function () {
             });
             block.o(local);
         }
-    }
-
-    function get_spread_update(levels, updates) {
-        const update = {};
-        const to_null_out = {};
-        const accounted_for = { $$scope: 1 };
-        let i = levels.length;
-        while (i--) {
-            const o = levels[i];
-            const n = updates[i];
-            if (n) {
-                for (const key in o) {
-                    if (!(key in n))
-                        to_null_out[key] = 1;
-                }
-                for (const key in n) {
-                    if (!accounted_for[key]) {
-                        update[key] = n[key];
-                        accounted_for[key] = 1;
-                    }
-                }
-                levels[i] = n;
-            }
-            else {
-                for (const key in o) {
-                    accounted_for[key] = 1;
-                }
-            }
-        }
-        for (const key in to_null_out) {
-            if (!(key in update))
-                update[key] = undefined;
-        }
-        return update;
     }
     function create_component(block) {
         block && block.c();
@@ -403,10 +256,6 @@ var app = (function () {
     function dispatch_dev(type, detail) {
         document.dispatchEvent(custom_event(type, Object.assign({ version: '3.24.0' }, detail)));
     }
-    function append_dev(target, node) {
-        dispatch_dev("SvelteDOMInsert", { target, node });
-        append(target, node);
-    }
     function insert_dev(target, node, anchor) {
         dispatch_dev("SvelteDOMInsert", { target, node, anchor });
         insert(target, node, anchor);
@@ -414,13 +263,6 @@ var app = (function () {
     function detach_dev(node) {
         dispatch_dev("SvelteDOMRemove", { node });
         detach(node);
-    }
-    function attr_dev(node, attribute, value) {
-        attr(node, attribute, value);
-        if (value == null)
-            dispatch_dev("SvelteDOMRemoveAttribute", { node, attribute });
-        else
-            dispatch_dev("SvelteDOMSetAttribute", { node, attribute, value });
     }
     function validate_slots(name, slot, keys) {
         for (const slot_key of Object.keys(slot)) {
@@ -470,92 +312,42 @@ var app = (function () {
 
     var chartXkcd = unwrapExports(dist);
 
-    function getEventsAction(component) {
-        return node => {
-          const events = Object.keys(component.$$.callbacks);
-          const listeners = [];
-
-          events.forEach(
-              event => listeners.push(
-                  listen(node, event, e =>  bubble(component, e))
-                )
-            );
-      
-          return {
-            destroy: () => {
-                listeners.forEach(
-                    listener => listener()
-                );
-            }
-          }
-        };
+    function Pie(node,chart) {
+        new chartXkcd.Pie(node, chart);
     }
 
-    /* node_modules\svelte-chota\cmp\Container.svelte generated by Svelte v3.24.0 */
-    const file = "node_modules\\svelte-chota\\cmp\\Container.svelte";
+    /* src\Piechart.svelte generated by Svelte v3.24.0 */
+    const file = "src\\Piechart.svelte";
 
     function create_fragment(ctx) {
-    	let div;
-    	let events_action;
-    	let current;
+    	let svg;
+    	let Pie_action;
     	let mounted;
     	let dispose;
-    	const default_slot_template = /*$$slots*/ ctx[3].default;
-    	const default_slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[2], null);
-    	let div_levels = [/*$$restProps*/ ctx[1]];
-    	let div_data = {};
-
-    	for (let i = 0; i < div_levels.length; i += 1) {
-    		div_data = assign(div_data, div_levels[i]);
-    	}
 
     	const block = {
     		c: function create() {
-    			div = element("div");
-    			if (default_slot) default_slot.c();
-    			set_attributes(div, div_data);
-    			toggle_class(div, "container", 1);
-    			add_location(div, file, 7, 0, 167);
+    			svg = svg_element("svg");
+    			add_location(svg, file, 9, 0, 205);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
     		},
     		m: function mount(target, anchor) {
-    			insert_dev(target, div, anchor);
-
-    			if (default_slot) {
-    				default_slot.m(div, null);
-    			}
-
-    			current = true;
+    			insert_dev(target, svg, anchor);
 
     			if (!mounted) {
-    				dispose = action_destroyer(events_action = /*events*/ ctx[0].call(null, div));
+    				dispose = action_destroyer(Pie_action = Pie.call(null, svg, /*options*/ ctx[0]));
     				mounted = true;
     			}
     		},
     		p: function update(ctx, [dirty]) {
-    			if (default_slot) {
-    				if (default_slot.p && dirty & /*$$scope*/ 4) {
-    					update_slot(default_slot, default_slot_template, ctx, /*$$scope*/ ctx[2], dirty, null, null);
-    				}
-    			}
-
-    			set_attributes(div, div_data = get_spread_update(div_levels, [dirty & /*$$restProps*/ 2 && /*$$restProps*/ ctx[1]]));
-    			toggle_class(div, "container", 1);
+    			if (Pie_action && is_function(Pie_action.update) && dirty & /*options*/ 1) Pie_action.update.call(null, /*options*/ ctx[0]);
     		},
-    		i: function intro(local) {
-    			if (current) return;
-    			transition_in(default_slot, local);
-    			current = true;
-    		},
-    		o: function outro(local) {
-    			transition_out(default_slot, local);
-    			current = false;
-    		},
+    		i: noop,
+    		o: noop,
     		d: function destroy(detaching) {
-    			if (detaching) detach_dev(div);
-    			if (default_slot) default_slot.d(detaching);
+    			if (detaching) detach_dev(svg);
     			mounted = false;
     			dispose();
     		}
@@ -573,110 +365,96 @@ var app = (function () {
     }
 
     function instance($$self, $$props, $$invalidate) {
-    	const omit_props_names = [];
-    	let $$restProps = compute_rest_props($$props, omit_props_names);
-    	const events = getEventsAction(current_component);
-    	let { $$slots = {}, $$scope } = $$props;
-    	validate_slots("Container", $$slots, ['default']);
+    	let { options } = $$props;
+    	const writable_props = ["options"];
 
-    	$$self.$set = $$new_props => {
-    		$$props = assign(assign({}, $$props), exclude_internal_props($$new_props));
-    		$$invalidate(1, $$restProps = compute_rest_props($$props, omit_props_names));
-    		if ("$$scope" in $$new_props) $$invalidate(2, $$scope = $$new_props.$$scope);
-    	};
-
-    	$$self.$capture_state = () => ({
-    		getEventsAction,
-    		current_component,
-    		events
+    	Object.keys($$props).forEach(key => {
+    		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== "$$") console.warn(`<Piechart> was created with unknown prop '${key}'`);
     	});
 
-    	return [events, $$restProps, $$scope, $$slots];
+    	let { $$slots = {}, $$scope } = $$props;
+    	validate_slots("Piechart", $$slots, []);
+
+    	$$self.$set = $$props => {
+    		if ("options" in $$props) $$invalidate(0, options = $$props.options);
+    	};
+
+    	$$self.$capture_state = () => ({ chartXkcd, Pie, options });
+
+    	$$self.$inject_state = $$props => {
+    		if ("options" in $$props) $$invalidate(0, options = $$props.options);
+    	};
+
+    	if ($$props && "$$inject" in $$props) {
+    		$$self.$inject_state($$props.$$inject);
+    	}
+
+    	return [options];
     }
 
-    class Container extends SvelteComponentDev {
+    class Piechart extends SvelteComponentDev {
     	constructor(options) {
     		super(options);
-    		init(this, options, instance, create_fragment, safe_not_equal, {});
+    		init(this, options, instance, create_fragment, safe_not_equal, { options: 0 });
 
     		dispatch_dev("SvelteRegisterComponent", {
     			component: this,
-    			tagName: "Container",
+    			tagName: "Piechart",
     			options,
     			id: create_fragment.name
     		});
+
+    		const { ctx } = this.$$;
+    		const props = options.props || {};
+
+    		if (/*options*/ ctx[0] === undefined && !("options" in props)) {
+    			console.warn("<Piechart> was created without expected prop 'options'");
+    		}
+    	}
+
+    	get options() {
+    		throw new Error("<Piechart>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set options(value) {
+    		throw new Error("<Piechart>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
     	}
     }
 
-    /* node_modules\svelte-chota\cmp\Row.svelte generated by Svelte v3.24.0 */
-    const file$1 = "node_modules\\svelte-chota\\cmp\\Row.svelte";
+    /* src\Charts.svelte generated by Svelte v3.24.0 */
 
     function create_fragment$1(ctx) {
-    	let div;
-    	let events_action;
+    	let piechart;
     	let current;
-    	let mounted;
-    	let dispose;
-    	const default_slot_template = /*$$slots*/ ctx[4].default;
-    	const default_slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[3], null);
-    	let div_levels = [/*$$restProps*/ ctx[2]];
-    	let div_data = {};
 
-    	for (let i = 0; i < div_levels.length; i += 1) {
-    		div_data = assign(div_data, div_levels[i]);
-    	}
+    	piechart = new Piechart({
+    			props: { options: /*options*/ ctx[0] },
+    			$$inline: true
+    		});
 
     	const block = {
     		c: function create() {
-    			div = element("div");
-    			if (default_slot) default_slot.c();
-    			set_attributes(div, div_data);
-    			toggle_class(div, "row", 1);
-    			toggle_class(div, "reverse", /*reverse*/ ctx[0]);
-    			add_location(div, file$1, 9, 0, 209);
+    			create_component(piechart.$$.fragment);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
     		},
     		m: function mount(target, anchor) {
-    			insert_dev(target, div, anchor);
-
-    			if (default_slot) {
-    				default_slot.m(div, null);
-    			}
-
+    			mount_component(piechart, target, anchor);
     			current = true;
-
-    			if (!mounted) {
-    				dispose = action_destroyer(events_action = /*events*/ ctx[1].call(null, div));
-    				mounted = true;
-    			}
     		},
-    		p: function update(ctx, [dirty]) {
-    			if (default_slot) {
-    				if (default_slot.p && dirty & /*$$scope*/ 8) {
-    					update_slot(default_slot, default_slot_template, ctx, /*$$scope*/ ctx[3], dirty, null, null);
-    				}
-    			}
-
-    			set_attributes(div, div_data = get_spread_update(div_levels, [dirty & /*$$restProps*/ 4 && /*$$restProps*/ ctx[2]]));
-    			toggle_class(div, "row", 1);
-    			toggle_class(div, "reverse", /*reverse*/ ctx[0]);
-    		},
+    		p: noop,
     		i: function intro(local) {
     			if (current) return;
-    			transition_in(default_slot, local);
+    			transition_in(piechart.$$.fragment, local);
     			current = true;
     		},
     		o: function outro(local) {
-    			transition_out(default_slot, local);
+    			transition_out(piechart.$$.fragment, local);
     			current = false;
     		},
     		d: function destroy(detaching) {
-    			if (detaching) detach_dev(div);
-    			if (default_slot) default_slot.d(detaching);
-    			mounted = false;
-    			dispose();
+    			destroy_component(piechart, detaching);
     		}
     	};
 
@@ -692,1209 +470,11 @@ var app = (function () {
     }
 
     function instance$1($$self, $$props, $$invalidate) {
-    	const omit_props_names = ["reverse"];
-    	let $$restProps = compute_rest_props($$props, omit_props_names);
-    	let { reverse = false } = $$props;
-    	const events = getEventsAction(current_component);
-    	let { $$slots = {}, $$scope } = $$props;
-    	validate_slots("Row", $$slots, ['default']);
-
-    	$$self.$set = $$new_props => {
-    		$$props = assign(assign({}, $$props), exclude_internal_props($$new_props));
-    		$$invalidate(2, $$restProps = compute_rest_props($$props, omit_props_names));
-    		if ("reverse" in $$new_props) $$invalidate(0, reverse = $$new_props.reverse);
-    		if ("$$scope" in $$new_props) $$invalidate(3, $$scope = $$new_props.$$scope);
-    	};
-
-    	$$self.$capture_state = () => ({
-    		getEventsAction,
-    		current_component,
-    		reverse,
-    		events
-    	});
-
-    	$$self.$inject_state = $$new_props => {
-    		if ("reverse" in $$props) $$invalidate(0, reverse = $$new_props.reverse);
-    	};
-
-    	if ($$props && "$$inject" in $$props) {
-    		$$self.$inject_state($$props.$$inject);
-    	}
-
-    	return [reverse, events, $$restProps, $$scope, $$slots];
-    }
-
-    class Row extends SvelteComponentDev {
-    	constructor(options) {
-    		super(options);
-    		init(this, options, instance$1, create_fragment$1, safe_not_equal, { reverse: 0 });
-
-    		dispatch_dev("SvelteRegisterComponent", {
-    			component: this,
-    			tagName: "Row",
-    			options,
-    			id: create_fragment$1.name
-    		});
-    	}
-
-    	get reverse() {
-    		throw new Error("<Row>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	set reverse(value) {
-    		throw new Error("<Row>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-    }
-
-    /* node_modules\svelte-chota\cmp\Col.svelte generated by Svelte v3.24.0 */
-    const file$2 = "node_modules\\svelte-chota\\cmp\\Col.svelte";
-
-    function create_fragment$2(ctx) {
-    	let div;
-    	let events_action;
-    	let current;
-    	let mounted;
-    	let dispose;
-    	const default_slot_template = /*$$slots*/ ctx[7].default;
-    	const default_slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[6], null);
-    	let div_levels = [/*$$restProps*/ ctx[2], { class: /*classes*/ ctx[0] }];
-    	let div_data = {};
-
-    	for (let i = 0; i < div_levels.length; i += 1) {
-    		div_data = assign(div_data, div_levels[i]);
-    	}
-
-    	const block = {
-    		c: function create() {
-    			div = element("div");
-    			if (default_slot) default_slot.c();
-    			set_attributes(div, div_data);
-    			add_location(div, file$2, 31, 0, 889);
-    		},
-    		l: function claim(nodes) {
-    			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
-    		},
-    		m: function mount(target, anchor) {
-    			insert_dev(target, div, anchor);
-
-    			if (default_slot) {
-    				default_slot.m(div, null);
-    			}
-
-    			current = true;
-
-    			if (!mounted) {
-    				dispose = action_destroyer(events_action = /*events*/ ctx[1].call(null, div));
-    				mounted = true;
-    			}
-    		},
-    		p: function update(ctx, [dirty]) {
-    			if (default_slot) {
-    				if (default_slot.p && dirty & /*$$scope*/ 64) {
-    					update_slot(default_slot, default_slot_template, ctx, /*$$scope*/ ctx[6], dirty, null, null);
-    				}
-    			}
-
-    			set_attributes(div, div_data = get_spread_update(div_levels, [
-    				dirty & /*$$restProps*/ 4 && /*$$restProps*/ ctx[2],
-    				(!current || dirty & /*classes*/ 1) && { class: /*classes*/ ctx[0] }
-    			]));
-    		},
-    		i: function intro(local) {
-    			if (current) return;
-    			transition_in(default_slot, local);
-    			current = true;
-    		},
-    		o: function outro(local) {
-    			transition_out(default_slot, local);
-    			current = false;
-    		},
-    		d: function destroy(detaching) {
-    			if (detaching) detach_dev(div);
-    			if (default_slot) default_slot.d(detaching);
-    			mounted = false;
-    			dispose();
-    		}
-    	};
-
-    	dispatch_dev("SvelteRegisterBlock", {
-    		block,
-    		id: create_fragment$2.name,
-    		type: "component",
-    		source: "",
-    		ctx
-    	});
-
-    	return block;
-    }
-
-    function instance$2($$self, $$props, $$invalidate) {
-    	const omit_props_names = ["size","sizeMD","sizeLG"];
-    	let $$restProps = compute_rest_props($$props, omit_props_names);
-    	let { size = false } = $$props;
-    	let { sizeMD = false } = $$props;
-    	let { sizeLG = false } = $$props;
-    	const events = getEventsAction(current_component);
-
-    	function get_col_classes(d, md, lg) {
-    		let list = [];
-    		if (!size || (size < 1 || size > 12)) list.push("col"); else if (size >= 1 && size <= 12) list.push(`col-${size}`);
-    		if (sizeMD) if (sizeMD >= 1 && sizeMD <= 12) list.push(`col-${sizeMD}-md`);
-    		if (sizeLG) if (sizeLG >= 1 && sizeLG <= 12) list.push(`col-${sizeLG}-lg`);
-    		return list.join(" ");
-    	}
-
-    	let { $$slots = {}, $$scope } = $$props;
-    	validate_slots("Col", $$slots, ['default']);
-
-    	$$self.$set = $$new_props => {
-    		$$props = assign(assign({}, $$props), exclude_internal_props($$new_props));
-    		$$invalidate(2, $$restProps = compute_rest_props($$props, omit_props_names));
-    		if ("size" in $$new_props) $$invalidate(3, size = $$new_props.size);
-    		if ("sizeMD" in $$new_props) $$invalidate(4, sizeMD = $$new_props.sizeMD);
-    		if ("sizeLG" in $$new_props) $$invalidate(5, sizeLG = $$new_props.sizeLG);
-    		if ("$$scope" in $$new_props) $$invalidate(6, $$scope = $$new_props.$$scope);
-    	};
-
-    	$$self.$capture_state = () => ({
-    		getEventsAction,
-    		current_component,
-    		size,
-    		sizeMD,
-    		sizeLG,
-    		events,
-    		get_col_classes,
-    		classes
-    	});
-
-    	$$self.$inject_state = $$new_props => {
-    		if ("size" in $$props) $$invalidate(3, size = $$new_props.size);
-    		if ("sizeMD" in $$props) $$invalidate(4, sizeMD = $$new_props.sizeMD);
-    		if ("sizeLG" in $$props) $$invalidate(5, sizeLG = $$new_props.sizeLG);
-    		if ("classes" in $$props) $$invalidate(0, classes = $$new_props.classes);
-    	};
-
-    	let classes;
-
-    	if ($$props && "$$inject" in $$props) {
-    		$$self.$inject_state($$props.$$inject);
-    	}
-
-    	$$self.$$.update = () => {
-    		 $$invalidate(0, classes = $$restProps.hasOwnProperty("class")
-    		? $$restProps["class"] + " " + get_col_classes()
-    		: get_col_classes());
-    	};
-
-    	return [classes, events, $$restProps, size, sizeMD, sizeLG, $$scope, $$slots];
-    }
-
-    class Col extends SvelteComponentDev {
-    	constructor(options) {
-    		super(options);
-    		init(this, options, instance$2, create_fragment$2, safe_not_equal, { size: 3, sizeMD: 4, sizeLG: 5 });
-
-    		dispatch_dev("SvelteRegisterComponent", {
-    			component: this,
-    			tagName: "Col",
-    			options,
-    			id: create_fragment$2.name
-    		});
-    	}
-
-    	get size() {
-    		throw new Error("<Col>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	set size(value) {
-    		throw new Error("<Col>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	get sizeMD() {
-    		throw new Error("<Col>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	set sizeMD(value) {
-    		throw new Error("<Col>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	get sizeLG() {
-    		throw new Error("<Col>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	set sizeLG(value) {
-    		throw new Error("<Col>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-    }
-
-    function Bar(node,chart) {
-        new chartXkcd.Bar(node, chart);
-
-    }
-
-    function StackedBar(node,chart) {
-         new chartXkcd.StackedBar(node, chart);
-      
-      }
-
-    function Pie(node,chart) {
-        new chartXkcd.Pie(node, chart);
-    }
-
-    function Line(node,chart) {
-        new chartXkcd.Line(node, chart);
-    }
-
-    function XY(node,chart) {
-        new chartXkcd.XY(node, chart);
-    }
-
-    function Radar(node,chart) {
-        new chartXkcd.Radar(node, chart);
-    }
-
-    /* src\App.svelte generated by Svelte v3.24.0 */
-    const file$3 = "src\\App.svelte";
-
-    // (174:3) <Col>
-    function create_default_slot_10(ctx) {
-    	let p;
-    	let a0;
-    	let t1;
-    	let a1;
-    	let t3;
-
-    	const block = {
-    		c: function create() {
-    			p = element("p");
-    			a0 = element("a");
-    			a0.textContent = "Tim Qian XKCD charts";
-    			t1 = text(" but with ");
-    			a1 = element("a");
-    			a1.textContent = "svelte";
-    			t3 = text(". You can check out the article on dev.");
-    			attr_dev(a0, "href", "https://timqian.com/chart.xkcd");
-    			add_location(a0, file$3, 175, 5, 3377);
-    			attr_dev(a1, "href", "https://svelte.dev");
-    			attr_dev(a1, "class", "text-warning");
-    			add_location(a1, file$3, 175, 80, 3452);
-    			add_location(p, file$3, 174, 4, 3368);
-    		},
-    		m: function mount(target, anchor) {
-    			insert_dev(target, p, anchor);
-    			append_dev(p, a0);
-    			append_dev(p, t1);
-    			append_dev(p, a1);
-    			append_dev(p, t3);
-    		},
-    		d: function destroy(detaching) {
-    			if (detaching) detach_dev(p);
-    		}
-    	};
-
-    	dispatch_dev("SvelteRegisterBlock", {
-    		block,
-    		id: create_default_slot_10.name,
-    		type: "slot",
-    		source: "(174:3) <Col>",
-    		ctx
-    	});
-
-    	return block;
-    }
-
-    // (173:2) <Row>
-    function create_default_slot_9(ctx) {
-    	let col;
-    	let current;
-
-    	col = new Col({
-    			props: {
-    				$$slots: { default: [create_default_slot_10] },
-    				$$scope: { ctx }
-    			},
-    			$$inline: true
-    		});
-
-    	const block = {
-    		c: function create() {
-    			create_component(col.$$.fragment);
-    		},
-    		m: function mount(target, anchor) {
-    			mount_component(col, target, anchor);
-    			current = true;
-    		},
-    		p: function update(ctx, dirty) {
-    			const col_changes = {};
-
-    			if (dirty & /*$$scope*/ 128) {
-    				col_changes.$$scope = { dirty, ctx };
-    			}
-
-    			col.$set(col_changes);
-    		},
-    		i: function intro(local) {
-    			if (current) return;
-    			transition_in(col.$$.fragment, local);
-    			current = true;
-    		},
-    		o: function outro(local) {
-    			transition_out(col.$$.fragment, local);
-    			current = false;
-    		},
-    		d: function destroy(detaching) {
-    			destroy_component(col, detaching);
-    		}
-    	};
-
-    	dispatch_dev("SvelteRegisterBlock", {
-    		block,
-    		id: create_default_slot_9.name,
-    		type: "slot",
-    		source: "(173:2) <Row>",
-    		ctx
-    	});
-
-    	return block;
-    }
-
-    // (182:3) <Col size="6">
-    function create_default_slot_8(ctx) {
-    	let svg;
-    	let Bar_action;
-    	let t0;
-    	let hr;
-    	let t1;
-    	let p;
-    	let mounted;
-    	let dispose;
-
-    	const block = {
-    		c: function create() {
-    			svg = svg_element("svg");
-    			t0 = space();
-    			hr = element("hr");
-    			t1 = space();
-    			p = element("p");
-    			p.textContent = "Bar Chart";
-    			add_location(svg, file$3, 182, 3, 3616);
-    			add_location(hr, file$3, 183, 3, 3651);
-    			attr_dev(p, "class", "is-center");
-    			add_location(p, file$3, 184, 3, 3659);
-    		},
-    		m: function mount(target, anchor) {
-    			insert_dev(target, svg, anchor);
-    			insert_dev(target, t0, anchor);
-    			insert_dev(target, hr, anchor);
-    			insert_dev(target, t1, anchor);
-    			insert_dev(target, p, anchor);
-
-    			if (!mounted) {
-    				dispose = action_destroyer(Bar_action = Bar.call(null, svg, /*bar_chart*/ ctx[0]));
-    				mounted = true;
-    			}
-    		},
-    		p: noop,
-    		d: function destroy(detaching) {
-    			if (detaching) detach_dev(svg);
-    			if (detaching) detach_dev(t0);
-    			if (detaching) detach_dev(hr);
-    			if (detaching) detach_dev(t1);
-    			if (detaching) detach_dev(p);
-    			mounted = false;
-    			dispose();
-    		}
-    	};
-
-    	dispatch_dev("SvelteRegisterBlock", {
-    		block,
-    		id: create_default_slot_8.name,
-    		type: "slot",
-    		source: "(182:3) <Col size=\\\"6\\\">",
-    		ctx
-    	});
-
-    	return block;
-    }
-
-    // (187:3) <Col size="6">
-    function create_default_slot_7(ctx) {
-    	let svg;
-    	let XY_action;
-    	let t0;
-    	let hr;
-    	let t1;
-    	let p;
-    	let mounted;
-    	let dispose;
-
-    	const block = {
-    		c: function create() {
-    			svg = svg_element("svg");
-    			t0 = space();
-    			hr = element("hr");
-    			t1 = space();
-    			p = element("p");
-    			p.textContent = "XY Chart";
-    			add_location(svg, file$3, 187, 3, 3725);
-    			add_location(hr, file$3, 188, 3, 3758);
-    			attr_dev(p, "class", "is-center");
-    			add_location(p, file$3, 189, 3, 3766);
-    		},
-    		m: function mount(target, anchor) {
-    			insert_dev(target, svg, anchor);
-    			insert_dev(target, t0, anchor);
-    			insert_dev(target, hr, anchor);
-    			insert_dev(target, t1, anchor);
-    			insert_dev(target, p, anchor);
-
-    			if (!mounted) {
-    				dispose = action_destroyer(XY_action = XY.call(null, svg, /*xy_chart*/ ctx[1]));
-    				mounted = true;
-    			}
-    		},
-    		p: noop,
-    		d: function destroy(detaching) {
-    			if (detaching) detach_dev(svg);
-    			if (detaching) detach_dev(t0);
-    			if (detaching) detach_dev(hr);
-    			if (detaching) detach_dev(t1);
-    			if (detaching) detach_dev(p);
-    			mounted = false;
-    			dispose();
-    		}
-    	};
-
-    	dispatch_dev("SvelteRegisterBlock", {
-    		block,
-    		id: create_default_slot_7.name,
-    		type: "slot",
-    		source: "(187:3) <Col size=\\\"6\\\">",
-    		ctx
-    	});
-
-    	return block;
-    }
-
-    // (193:3) <Col size="6">
-    function create_default_slot_6(ctx) {
-    	let svg;
-    	let Pie_action;
-    	let t0;
-    	let hr;
-    	let t1;
-    	let p;
-    	let mounted;
-    	let dispose;
-
-    	const block = {
-    		c: function create() {
-    			svg = svg_element("svg");
-    			t0 = space();
-    			hr = element("hr");
-    			t1 = space();
-    			p = element("p");
-    			p.textContent = "Pie Chart";
-    			add_location(svg, file$3, 193, 3, 3832);
-    			add_location(hr, file$3, 194, 3, 3867);
-    			attr_dev(p, "class", "is-center");
-    			add_location(p, file$3, 195, 3, 3875);
-    		},
-    		m: function mount(target, anchor) {
-    			insert_dev(target, svg, anchor);
-    			insert_dev(target, t0, anchor);
-    			insert_dev(target, hr, anchor);
-    			insert_dev(target, t1, anchor);
-    			insert_dev(target, p, anchor);
-
-    			if (!mounted) {
-    				dispose = action_destroyer(Pie_action = Pie.call(null, svg, /*pie_chart*/ ctx[2]));
-    				mounted = true;
-    			}
-    		},
-    		p: noop,
-    		d: function destroy(detaching) {
-    			if (detaching) detach_dev(svg);
-    			if (detaching) detach_dev(t0);
-    			if (detaching) detach_dev(hr);
-    			if (detaching) detach_dev(t1);
-    			if (detaching) detach_dev(p);
-    			mounted = false;
-    			dispose();
-    		}
-    	};
-
-    	dispatch_dev("SvelteRegisterBlock", {
-    		block,
-    		id: create_default_slot_6.name,
-    		type: "slot",
-    		source: "(193:3) <Col size=\\\"6\\\">",
-    		ctx
-    	});
-
-    	return block;
-    }
-
-    // (198:3) <Col size="6">
-    function create_default_slot_5(ctx) {
-    	let svg;
-    	let StackedBar_action;
-    	let t0;
-    	let hr;
-    	let t1;
-    	let p;
-    	let mounted;
-    	let dispose;
-
-    	const block = {
-    		c: function create() {
-    			svg = svg_element("svg");
-    			t0 = space();
-    			hr = element("hr");
-    			t1 = space();
-    			p = element("p");
-    			p.textContent = "Stacked Bar Chart";
-    			add_location(svg, file$3, 198, 3, 3941);
-    			add_location(hr, file$3, 199, 3, 3981);
-    			attr_dev(p, "class", "is-center");
-    			add_location(p, file$3, 200, 3, 3989);
-    		},
-    		m: function mount(target, anchor) {
-    			insert_dev(target, svg, anchor);
-    			insert_dev(target, t0, anchor);
-    			insert_dev(target, hr, anchor);
-    			insert_dev(target, t1, anchor);
-    			insert_dev(target, p, anchor);
-
-    			if (!mounted) {
-    				dispose = action_destroyer(StackedBar_action = StackedBar.call(null, svg, /*stacked*/ ctx[4]));
-    				mounted = true;
-    			}
-    		},
-    		p: noop,
-    		d: function destroy(detaching) {
-    			if (detaching) detach_dev(svg);
-    			if (detaching) detach_dev(t0);
-    			if (detaching) detach_dev(hr);
-    			if (detaching) detach_dev(t1);
-    			if (detaching) detach_dev(p);
-    			mounted = false;
-    			dispose();
-    		}
-    	};
-
-    	dispatch_dev("SvelteRegisterBlock", {
-    		block,
-    		id: create_default_slot_5.name,
-    		type: "slot",
-    		source: "(198:3) <Col size=\\\"6\\\">",
-    		ctx
-    	});
-
-    	return block;
-    }
-
-    // (203:3) <Col size="6">
-    function create_default_slot_4(ctx) {
-    	let svg;
-    	let Radar_action;
-    	let t0;
-    	let hr;
-    	let t1;
-    	let p;
-    	let mounted;
-    	let dispose;
-
-    	const block = {
-    		c: function create() {
-    			svg = svg_element("svg");
-    			t0 = space();
-    			hr = element("hr");
-    			t1 = space();
-    			p = element("p");
-    			p.textContent = "Radar Chart";
-    			add_location(svg, file$3, 203, 3, 4063);
-    			add_location(hr, file$3, 204, 3, 4096);
-    			attr_dev(p, "class", "is-center");
-    			add_location(p, file$3, 205, 3, 4104);
-    		},
-    		m: function mount(target, anchor) {
-    			insert_dev(target, svg, anchor);
-    			insert_dev(target, t0, anchor);
-    			insert_dev(target, hr, anchor);
-    			insert_dev(target, t1, anchor);
-    			insert_dev(target, p, anchor);
-
-    			if (!mounted) {
-    				dispose = action_destroyer(Radar_action = Radar.call(null, svg, /*radar*/ ctx[5]));
-    				mounted = true;
-    			}
-    		},
-    		p: noop,
-    		d: function destroy(detaching) {
-    			if (detaching) detach_dev(svg);
-    			if (detaching) detach_dev(t0);
-    			if (detaching) detach_dev(hr);
-    			if (detaching) detach_dev(t1);
-    			if (detaching) detach_dev(p);
-    			mounted = false;
-    			dispose();
-    		}
-    	};
-
-    	dispatch_dev("SvelteRegisterBlock", {
-    		block,
-    		id: create_default_slot_4.name,
-    		type: "slot",
-    		source: "(203:3) <Col size=\\\"6\\\">",
-    		ctx
-    	});
-
-    	return block;
-    }
-
-    // (208:3) <Col size="6">
-    function create_default_slot_3(ctx) {
-    	let svg;
-    	let Pie_action;
-    	let t0;
-    	let hr;
-    	let t1;
-    	let p;
-    	let t2;
-    	let code;
-    	let mounted;
-    	let dispose;
-
-    	const block = {
-    		c: function create() {
-    			svg = svg_element("svg");
-    			t0 = space();
-    			hr = element("hr");
-    			t1 = space();
-    			p = element("p");
-    			t2 = text("Doughnut Chart  ");
-    			code = element("code");
-    			code.textContent = "innerRadius is set to 0.5";
-    			add_location(svg, file$3, 208, 4, 4173);
-    			add_location(hr, file$3, 209, 4, 4208);
-    			add_location(code, file$3, 210, 41, 4254);
-    			attr_dev(p, "class", "is-center");
-    			add_location(p, file$3, 210, 4, 4217);
-    		},
-    		m: function mount(target, anchor) {
-    			insert_dev(target, svg, anchor);
-    			insert_dev(target, t0, anchor);
-    			insert_dev(target, hr, anchor);
-    			insert_dev(target, t1, anchor);
-    			insert_dev(target, p, anchor);
-    			append_dev(p, t2);
-    			append_dev(p, code);
-
-    			if (!mounted) {
-    				dispose = action_destroyer(Pie_action = Pie.call(null, svg, /*doughnut*/ ctx[3]));
-    				mounted = true;
-    			}
-    		},
-    		p: noop,
-    		d: function destroy(detaching) {
-    			if (detaching) detach_dev(svg);
-    			if (detaching) detach_dev(t0);
-    			if (detaching) detach_dev(hr);
-    			if (detaching) detach_dev(t1);
-    			if (detaching) detach_dev(p);
-    			mounted = false;
-    			dispose();
-    		}
-    	};
-
-    	dispatch_dev("SvelteRegisterBlock", {
-    		block,
-    		id: create_default_slot_3.name,
-    		type: "slot",
-    		source: "(208:3) <Col size=\\\"6\\\">",
-    		ctx
-    	});
-
-    	return block;
-    }
-
-    // (213:3) <Col size="6">
-    function create_default_slot_2(ctx) {
-    	let svg;
-    	let Line_action;
-    	let t0;
-    	let hr;
-    	let t1;
-    	let p;
-    	let mounted;
-    	let dispose;
-
-    	const block = {
-    		c: function create() {
-    			svg = svg_element("svg");
-    			t0 = space();
-    			hr = element("hr");
-    			t1 = space();
-    			p = element("p");
-    			p.textContent = "Line Chart";
-    			add_location(svg, file$3, 213, 4, 4330);
-    			add_location(hr, file$3, 214, 4, 4362);
-    			attr_dev(p, "class", "is-center");
-    			add_location(p, file$3, 215, 4, 4371);
-    		},
-    		m: function mount(target, anchor) {
-    			insert_dev(target, svg, anchor);
-    			insert_dev(target, t0, anchor);
-    			insert_dev(target, hr, anchor);
-    			insert_dev(target, t1, anchor);
-    			insert_dev(target, p, anchor);
-
-    			if (!mounted) {
-    				dispose = action_destroyer(Line_action = Line.call(null, svg, /*line*/ ctx[6]));
-    				mounted = true;
-    			}
-    		},
-    		p: noop,
-    		d: function destroy(detaching) {
-    			if (detaching) detach_dev(svg);
-    			if (detaching) detach_dev(t0);
-    			if (detaching) detach_dev(hr);
-    			if (detaching) detach_dev(t1);
-    			if (detaching) detach_dev(p);
-    			mounted = false;
-    			dispose();
-    		}
-    	};
-
-    	dispatch_dev("SvelteRegisterBlock", {
-    		block,
-    		id: create_default_slot_2.name,
-    		type: "slot",
-    		source: "(213:3) <Col size=\\\"6\\\">",
-    		ctx
-    	});
-
-    	return block;
-    }
-
-    // (181:2) <Row>
-    function create_default_slot_1(ctx) {
-    	let col0;
-    	let t0;
-    	let col1;
-    	let t1;
-    	let col2;
-    	let t2;
-    	let col3;
-    	let t3;
-    	let col4;
-    	let t4;
-    	let col5;
-    	let t5;
-    	let col6;
-    	let current;
-
-    	col0 = new Col({
-    			props: {
-    				size: "6",
-    				$$slots: { default: [create_default_slot_8] },
-    				$$scope: { ctx }
-    			},
-    			$$inline: true
-    		});
-
-    	col1 = new Col({
-    			props: {
-    				size: "6",
-    				$$slots: { default: [create_default_slot_7] },
-    				$$scope: { ctx }
-    			},
-    			$$inline: true
-    		});
-
-    	col2 = new Col({
-    			props: {
-    				size: "6",
-    				$$slots: { default: [create_default_slot_6] },
-    				$$scope: { ctx }
-    			},
-    			$$inline: true
-    		});
-
-    	col3 = new Col({
-    			props: {
-    				size: "6",
-    				$$slots: { default: [create_default_slot_5] },
-    				$$scope: { ctx }
-    			},
-    			$$inline: true
-    		});
-
-    	col4 = new Col({
-    			props: {
-    				size: "6",
-    				$$slots: { default: [create_default_slot_4] },
-    				$$scope: { ctx }
-    			},
-    			$$inline: true
-    		});
-
-    	col5 = new Col({
-    			props: {
-    				size: "6",
-    				$$slots: { default: [create_default_slot_3] },
-    				$$scope: { ctx }
-    			},
-    			$$inline: true
-    		});
-
-    	col6 = new Col({
-    			props: {
-    				size: "6",
-    				$$slots: { default: [create_default_slot_2] },
-    				$$scope: { ctx }
-    			},
-    			$$inline: true
-    		});
-
-    	const block = {
-    		c: function create() {
-    			create_component(col0.$$.fragment);
-    			t0 = space();
-    			create_component(col1.$$.fragment);
-    			t1 = space();
-    			create_component(col2.$$.fragment);
-    			t2 = space();
-    			create_component(col3.$$.fragment);
-    			t3 = space();
-    			create_component(col4.$$.fragment);
-    			t4 = space();
-    			create_component(col5.$$.fragment);
-    			t5 = space();
-    			create_component(col6.$$.fragment);
-    		},
-    		m: function mount(target, anchor) {
-    			mount_component(col0, target, anchor);
-    			insert_dev(target, t0, anchor);
-    			mount_component(col1, target, anchor);
-    			insert_dev(target, t1, anchor);
-    			mount_component(col2, target, anchor);
-    			insert_dev(target, t2, anchor);
-    			mount_component(col3, target, anchor);
-    			insert_dev(target, t3, anchor);
-    			mount_component(col4, target, anchor);
-    			insert_dev(target, t4, anchor);
-    			mount_component(col5, target, anchor);
-    			insert_dev(target, t5, anchor);
-    			mount_component(col6, target, anchor);
-    			current = true;
-    		},
-    		p: function update(ctx, dirty) {
-    			const col0_changes = {};
-
-    			if (dirty & /*$$scope*/ 128) {
-    				col0_changes.$$scope = { dirty, ctx };
-    			}
-
-    			col0.$set(col0_changes);
-    			const col1_changes = {};
-
-    			if (dirty & /*$$scope*/ 128) {
-    				col1_changes.$$scope = { dirty, ctx };
-    			}
-
-    			col1.$set(col1_changes);
-    			const col2_changes = {};
-
-    			if (dirty & /*$$scope*/ 128) {
-    				col2_changes.$$scope = { dirty, ctx };
-    			}
-
-    			col2.$set(col2_changes);
-    			const col3_changes = {};
-
-    			if (dirty & /*$$scope*/ 128) {
-    				col3_changes.$$scope = { dirty, ctx };
-    			}
-
-    			col3.$set(col3_changes);
-    			const col4_changes = {};
-
-    			if (dirty & /*$$scope*/ 128) {
-    				col4_changes.$$scope = { dirty, ctx };
-    			}
-
-    			col4.$set(col4_changes);
-    			const col5_changes = {};
-
-    			if (dirty & /*$$scope*/ 128) {
-    				col5_changes.$$scope = { dirty, ctx };
-    			}
-
-    			col5.$set(col5_changes);
-    			const col6_changes = {};
-
-    			if (dirty & /*$$scope*/ 128) {
-    				col6_changes.$$scope = { dirty, ctx };
-    			}
-
-    			col6.$set(col6_changes);
-    		},
-    		i: function intro(local) {
-    			if (current) return;
-    			transition_in(col0.$$.fragment, local);
-    			transition_in(col1.$$.fragment, local);
-    			transition_in(col2.$$.fragment, local);
-    			transition_in(col3.$$.fragment, local);
-    			transition_in(col4.$$.fragment, local);
-    			transition_in(col5.$$.fragment, local);
-    			transition_in(col6.$$.fragment, local);
-    			current = true;
-    		},
-    		o: function outro(local) {
-    			transition_out(col0.$$.fragment, local);
-    			transition_out(col1.$$.fragment, local);
-    			transition_out(col2.$$.fragment, local);
-    			transition_out(col3.$$.fragment, local);
-    			transition_out(col4.$$.fragment, local);
-    			transition_out(col5.$$.fragment, local);
-    			transition_out(col6.$$.fragment, local);
-    			current = false;
-    		},
-    		d: function destroy(detaching) {
-    			destroy_component(col0, detaching);
-    			if (detaching) detach_dev(t0);
-    			destroy_component(col1, detaching);
-    			if (detaching) detach_dev(t1);
-    			destroy_component(col2, detaching);
-    			if (detaching) detach_dev(t2);
-    			destroy_component(col3, detaching);
-    			if (detaching) detach_dev(t3);
-    			destroy_component(col4, detaching);
-    			if (detaching) detach_dev(t4);
-    			destroy_component(col5, detaching);
-    			if (detaching) detach_dev(t5);
-    			destroy_component(col6, detaching);
-    		}
-    	};
-
-    	dispatch_dev("SvelteRegisterBlock", {
-    		block,
-    		id: create_default_slot_1.name,
-    		type: "slot",
-    		source: "(181:2) <Row>",
-    		ctx
-    	});
-
-    	return block;
-    }
-
-    // (172:1) <Container>
-    function create_default_slot(ctx) {
-    	let row0;
-    	let t0;
-    	let hr;
-    	let t1;
-    	let row1;
-    	let current;
-
-    	row0 = new Row({
-    			props: {
-    				$$slots: { default: [create_default_slot_9] },
-    				$$scope: { ctx }
-    			},
-    			$$inline: true
-    		});
-
-    	row1 = new Row({
-    			props: {
-    				$$slots: { default: [create_default_slot_1] },
-    				$$scope: { ctx }
-    			},
-    			$$inline: true
-    		});
-
-    	const block = {
-    		c: function create() {
-    			create_component(row0.$$.fragment);
-    			t0 = space();
-    			hr = element("hr");
-    			t1 = space();
-    			create_component(row1.$$.fragment);
-    			add_location(hr, file$3, 179, 2, 3582);
-    		},
-    		m: function mount(target, anchor) {
-    			mount_component(row0, target, anchor);
-    			insert_dev(target, t0, anchor);
-    			insert_dev(target, hr, anchor);
-    			insert_dev(target, t1, anchor);
-    			mount_component(row1, target, anchor);
-    			current = true;
-    		},
-    		p: function update(ctx, dirty) {
-    			const row0_changes = {};
-
-    			if (dirty & /*$$scope*/ 128) {
-    				row0_changes.$$scope = { dirty, ctx };
-    			}
-
-    			row0.$set(row0_changes);
-    			const row1_changes = {};
-
-    			if (dirty & /*$$scope*/ 128) {
-    				row1_changes.$$scope = { dirty, ctx };
-    			}
-
-    			row1.$set(row1_changes);
-    		},
-    		i: function intro(local) {
-    			if (current) return;
-    			transition_in(row0.$$.fragment, local);
-    			transition_in(row1.$$.fragment, local);
-    			current = true;
-    		},
-    		o: function outro(local) {
-    			transition_out(row0.$$.fragment, local);
-    			transition_out(row1.$$.fragment, local);
-    			current = false;
-    		},
-    		d: function destroy(detaching) {
-    			destroy_component(row0, detaching);
-    			if (detaching) detach_dev(t0);
-    			if (detaching) detach_dev(hr);
-    			if (detaching) detach_dev(t1);
-    			destroy_component(row1, detaching);
-    		}
-    	};
-
-    	dispatch_dev("SvelteRegisterBlock", {
-    		block,
-    		id: create_default_slot.name,
-    		type: "slot",
-    		source: "(172:1) <Container>",
-    		ctx
-    	});
-
-    	return block;
-    }
-
-    function create_fragment$3(ctx) {
-    	let main;
-    	let container;
-    	let current;
-
-    	container = new Container({
-    			props: {
-    				$$slots: { default: [create_default_slot] },
-    				$$scope: { ctx }
-    			},
-    			$$inline: true
-    		});
-
-    	const block = {
-    		c: function create() {
-    			main = element("main");
-    			create_component(container.$$.fragment);
-    			add_location(main, file$3, 170, 0, 3327);
-    		},
-    		l: function claim(nodes) {
-    			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
-    		},
-    		m: function mount(target, anchor) {
-    			insert_dev(target, main, anchor);
-    			mount_component(container, main, null);
-    			current = true;
-    		},
-    		p: function update(ctx, [dirty]) {
-    			const container_changes = {};
-
-    			if (dirty & /*$$scope*/ 128) {
-    				container_changes.$$scope = { dirty, ctx };
-    			}
-
-    			container.$set(container_changes);
-    		},
-    		i: function intro(local) {
-    			if (current) return;
-    			transition_in(container.$$.fragment, local);
-    			current = true;
-    		},
-    		o: function outro(local) {
-    			transition_out(container.$$.fragment, local);
-    			current = false;
-    		},
-    		d: function destroy(detaching) {
-    			if (detaching) detach_dev(main);
-    			destroy_component(container);
-    		}
-    	};
-
-    	dispatch_dev("SvelteRegisterBlock", {
-    		block,
-    		id: create_fragment$3.name,
-    		type: "component",
-    		source: "",
-    		ctx
-    	});
-
-    	return block;
-    }
-
-    function instance$3($$self, $$props, $$invalidate) {
-    	let bar_chart = {
-    		title: "github stars VS patron number", // optional
-    		data: {
-    			labels: ["github stars", "patrons"],
-    			datasets: [{ data: [10, 5] }]
-    		},
-    		options: {
-    			// optional
-    			yTickCount: 2
-    		}
-    	};
-
-    	let xy_chart = {
-    		title: "Pokemon farms", //optional
-    		xLabel: "Coordinate", //optional
-    		yLabel: "Count", //optional
-    		data: {
-    			datasets: [
-    				{
-    					label: "Pikachu",
-    					data: [
-    						{ x: 3, y: 10 },
-    						{ x: 4, y: 122 },
-    						{ x: 10, y: 100 },
-    						{ x: 1, y: 2 },
-    						{ x: 2, y: 4 }
-    					]
-    				},
-    				{
-    					label: "Squirtle",
-    					data: [
-    						{ x: 3, y: 122 },
-    						{ x: 4, y: 212 },
-    						{ x: -3, y: 100 },
-    						{ x: 1, y: 1 },
-    						{ x: 1.5, y: 12 }
-    					]
-    				}
-    			]
-    		},
-    		options: {
-    			//optional
-    			xTickCount: 5,
-    			yTickCount: 5,
-    			legendPosition: chartXkcd.config.positionType.upRight
-    		}
-    	};
-
-    	let pie_chart = {
+    	let options = {
     		title: "What people think", // optional
     		data: {
     			labels: ["work", "sleep", "social"],
-    			datasets: [{ data: [30, 10, 60] }]
+    			datasets: [{ data: [30, 30, 60] }]
     		},
     		options: {
     			// optional
@@ -1903,178 +483,42 @@ var app = (function () {
     		}
     	};
 
-    	let doughnut = {
-    		title: "The Reality", // optional
-    		data: {
-    			labels: [
-    				"Lab",
-    				"Reading",
-    				"Writing",
-    				"Analysis",
-    				"That's Broken",
-    				"Planning",
-    				"Worrying",
-    				"More reading",
-    				"Shit that didn't work",
-    				"Crying",
-    				"Deciding to quit",
-    				"Fear",
-    				"I'll use Dr on my email"
-    			],
-    			datasets: [
-    				{
-    					data: [7.6, 7.6, 7.6, 7.6, 7.6, 7.6, 7.6, 7.6, 7.6, 7.6, 7.6, 7.6, 7.6]
-    				}
-    			]
-    		},
-    		options: {
-    			// optional
-    			innerRadius: 0.5,
-    			legendPosition: chartXkcd.config.positionType.upRight,
-    			dataColors: [
-    				"#f582ae",
-    				"#001858",
-    				"#8bd3dd",
-    				"#ff8906",
-    				"#7f5af0",
-    				"#2cb67d",
-    				"#010101",
-    				"#94a1b2",
-    				"#ade498",
-    				"#fa1616",
-    				"#e7dfd5",
-    				"#ffd31d",
-    				"#ccafaf"
-    			]
-    		}
-    	};
-
-    	let stacked = {
-    		title: "Issues and PR Submissions",
-    		xLabel: "Month",
-    		yLabel: "Count",
-    		data: {
-    			labels: ["Jan", "Feb", "Mar", "April", "May"],
-    			datasets: [
-    				{
-    					label: "Issues",
-    					data: [12, 19, 11, 29, 17]
-    				},
-    				{ label: "PRs", data: [3, 5, 2, 4, 1] },
-    				{ label: "Merges", data: [2, 3, 0, 1, 1] }
-    			]
-    		}
-    	};
-
-    	let radar = {
-    		title: "Letters in random words", // optional
-    		data: {
-    			labels: ["c", "h", "a", "r", "t"],
-    			datasets: [
-    				{
-    					label: "ccharrrt", // optional
-    					data: [2, 1, 1, 3, 1]
-    				},
-    				{
-    					label: "chhaart", // optional
-    					data: [1, 2, 2, 1, 1]
-    				}
-    			]
-    		},
-    		options: {
-    			// optional
-    			showLegend: true,
-    			dotSize: 0.8,
-    			showLabels: true,
-    			legendPosition: chartXkcd.config.positionType.upRight
-    		}
-    	};
-
-    	let line = {
-    		title: "Monthly income of an indie developer", // optional
-    		xLabel: "Month", // optional
-    		yLabel: "$ Dollars", // optional
-    		data: {
-    			labels: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
-    			datasets: [
-    				{
-    					label: "Plan",
-    					data: [30, 70, 200, 300, 500, 800, 1500, 2900, 5000, 8000]
-    				},
-    				{
-    					label: "Reality",
-    					data: [0, 1, 30, 70, 80, 100, 50, 80, 40, 150]
-    				}
-    			]
-    		},
-    		options: {
-    			// optional
-    			yTickCount: 3,
-    			legendPosition: chartXkcd.config.positionType.upLeft
-    		}
-    	};
-
     	const writable_props = [];
 
     	Object.keys($$props).forEach(key => {
-    		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== "$$") console.warn(`<App> was created with unknown prop '${key}'`);
+    		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== "$$") console.warn(`<Charts> was created with unknown prop '${key}'`);
     	});
 
     	let { $$slots = {}, $$scope } = $$props;
-    	validate_slots("App", $$slots, []);
-
-    	$$self.$capture_state = () => ({
-    		chartXkcd,
-    		Row,
-    		Col,
-    		Container,
-    		Pie,
-    		XY,
-    		Bar,
-    		Radar,
-    		StackedBar,
-    		Line,
-    		bar_chart,
-    		xy_chart,
-    		pie_chart,
-    		doughnut,
-    		stacked,
-    		radar,
-    		line
-    	});
+    	validate_slots("Charts", $$slots, []);
+    	$$self.$capture_state = () => ({ chartXkcd, Piechart, options });
 
     	$$self.$inject_state = $$props => {
-    		if ("bar_chart" in $$props) $$invalidate(0, bar_chart = $$props.bar_chart);
-    		if ("xy_chart" in $$props) $$invalidate(1, xy_chart = $$props.xy_chart);
-    		if ("pie_chart" in $$props) $$invalidate(2, pie_chart = $$props.pie_chart);
-    		if ("doughnut" in $$props) $$invalidate(3, doughnut = $$props.doughnut);
-    		if ("stacked" in $$props) $$invalidate(4, stacked = $$props.stacked);
-    		if ("radar" in $$props) $$invalidate(5, radar = $$props.radar);
-    		if ("line" in $$props) $$invalidate(6, line = $$props.line);
+    		if ("options" in $$props) $$invalidate(0, options = $$props.options);
     	};
 
     	if ($$props && "$$inject" in $$props) {
     		$$self.$inject_state($$props.$$inject);
     	}
 
-    	return [bar_chart, xy_chart, pie_chart, doughnut, stacked, radar, line];
+    	return [options];
     }
 
-    class App extends SvelteComponentDev {
+    class Charts extends SvelteComponentDev {
     	constructor(options) {
     		super(options);
-    		init(this, options, instance$3, create_fragment$3, safe_not_equal, {});
+    		init(this, options, instance$1, create_fragment$1, safe_not_equal, {});
 
     		dispatch_dev("SvelteRegisterComponent", {
     			component: this,
-    			tagName: "App",
+    			tagName: "Charts",
     			options,
-    			id: create_fragment$3.name
+    			id: create_fragment$1.name
     		});
     	}
     }
 
-    const app = new App({
+    const app = new Charts({
     	target: document.body,
 
     });

@@ -8,9 +8,6 @@
 	} from 'svelte-chota';
 	import {Pie, XY, Bar, Radar, StackedBar, Line} from './charts'
 
-
-
-
 	let bar_chart = {
 		title: 'github stars VS patron number', // optional
 		data: {
