@@ -33,5 +33,6 @@ import {Pie, XY, Bar, Radar, StackedBar, Line} from './charts'
 		},
 	}
 
-<svg use:Bar={bar_chart}></svg>
+
+<Chart type="bar" options={bar_chart}></Chart>
 ```
