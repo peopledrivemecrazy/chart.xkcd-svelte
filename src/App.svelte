@@ -160,8 +160,7 @@
 		<Row>
 			<Col>
 			<p>
-				<a href="https://timqian.com/chart.xkcd">Tim Qian XKCD charts</a> but with <a href="https://svelte.dev"
-					class="text-warning">svelte</a>. You can check out the article on dev.
+				A svelte wrapper for <a href="https://timqian.com/chart.xkcd">Tim Qian XKCD charts</a>. To use in <a href="https://www.npmjs.com/package/chart.xkcd-svelte">svelte</a>.
 			</p>
 			</Col>
 		</Row>
