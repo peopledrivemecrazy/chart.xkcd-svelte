@@ -6,7 +6,15 @@
 		Col,
 		Container,
 	} from 'svelte-chota';
-	import {Pie, XY, Bar, Radar, StackedBar, Line} from './charts'
+
+	import Chart from './Chart.svelte'
+
+	import Piechart from './Piechart.svelte';
+	import Barchart from './Barchart.svelte';
+	import XYchart from './XYchart.svelte';
+	import StackedBarchart from './StackedBarchart.svelte';
+	import Radarchart from './Radarchart.svelte';
+	import Linechart from './Linechart.svelte';
 
 	let bar_chart = {
 		title: 'github stars VS patron number', // optional
@@ -86,26 +94,8 @@
 			legendPosition: chartXkcd.config.positionType.upLeft,
 		},
 	}
-	let doughnut = {
-		title: 'The Reality', // optional
-		data: {
-			labels: ["Lab", "Reading", "Writing", "Analysis", "That's Broken", "Planning", "Worrying", "More reading",
-				"Shit that didn't work", "Crying", "Deciding to quit", "Fear", "I'll use Dr on my email"
-			],
-			datasets: [{
-				data: [7.6, 7.6, 7.6, 7.6, 7.6, 7.6, 7.6, 7.6, 7.6, 7.6, 7.6, 7.6, 7.6],
-			}]
-		},
-		options: { // optional
-			innerRadius: 0.5,
-			legendPosition: chartXkcd.config.positionType.upRight,
-			dataColors: ["#f582ae", "#001858", "#8bd3dd", "#ff8906", "#7f5af0", "#2cb67d", "#010101", "#94a1b2",
-				"#ade498", "#fa1616", "#e7dfd5", "#ffd31d", "#ccafaf"
-			]
 
-		},
-	}
-	let stacked = {
+	let stacked_chart = {
 		title: 'Issues and PR Submissions',
 		xLabel: 'Month',
 		yLabel: 'Count',
@@ -123,7 +113,7 @@
 			}],
 		},
 	}
-	let radar = {
+	let radar_chart = {
 		title: 'Letters in random words', // optional
 		data: {
 			labels: ['c', 'h', 'a', 'r', 't'],
@@ -142,25 +132,25 @@
 			legendPosition: chartXkcd.config.positionType.upRight,
 		},
 	}
-	let line = {
-  title: 'Monthly income of an indie developer', // optional
-  xLabel: 'Month', // optional
-  yLabel: '$ Dollars', // optional
-  data: {
-    labels: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
-    datasets: [{
-      label: 'Plan',
-      data: [30, 70, 200, 300, 500, 800, 1500, 2900, 5000, 8000],
-    }, {
-      label: 'Reality',
-      data: [0, 1, 30, 70, 80, 100, 50, 80, 40, 150],
-    }],
-  },
-  options: { // optional
-    yTickCount: 3,
-    legendPosition: chartXkcd.config.positionType.upLeft
-  }
-}
+	let line_chart = {
+		title: 'Monthly income of an indie developer', // optional
+		xLabel: 'Month', // optional
+		yLabel: '$ Dollars', // optional
+		data: {
+			labels: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
+			datasets: [{
+				label: 'Plan',
+				data: [30, 70, 200, 300, 500, 800, 1500, 2900, 5000, 8000],
+			}, {
+				label: 'Reality',
+				data: [0, 1, 30, 70, 80, 100, 50, 80, 40, 150],
+			}],
+		},
+		options: { // optional
+			yTickCount: 3,
+			legendPosition: chartXkcd.config.positionType.upLeft
+		}
+	}
 </script>
 
 
@@ -169,52 +159,48 @@
 	<Container>
 		<Row>
 			<Col>
-				<p>
-					<a href="https://timqian.com/chart.xkcd">Tim Qian XKCD charts</a> but with <a href="https://svelte.dev" class="text-warning">svelte</a>. You can check out the article on dev.
-				</p>
+			<p>
+				<a href="https://timqian.com/chart.xkcd">Tim Qian XKCD charts</a> but with <a href="https://svelte.dev"
+					class="text-warning">svelte</a>. You can check out the article on dev.
+			</p>
 			</Col>
 		</Row>
 		<hr>
 		<Row>
 			<Col size="6">
-			<svg use:Bar={bar_chart}></svg>
+			<Barchart  options={bar_chart} />
 			<hr>
 			<p class="is-center">Bar Chart</p>
 			</Col>
 			<Col size="6">
-			<svg use:XY={xy_chart}></svg>
+			<XYchart  options={xy_chart} />
 			<hr>
 			<p class="is-center">XY Chart</p>
-
 			</Col>
 			<Col size="6">
-			<svg use:Pie={pie_chart}></svg>
+			<Piechart  options={pie_chart} />
 			<hr>
 			<p class="is-center">Pie Chart</p>
 			</Col>
 			<Col size="6">
-			<svg use:StackedBar={stacked}></svg>
+			<StackedBarchart  options={stacked_chart} />
 			<hr>
 			<p class="is-center">Stacked Bar Chart</p>
 			</Col>
 			<Col size="6">
-			<svg use:Radar={radar}></svg>
+			<Radarchart  options={radar_chart} />
 			<hr>
 			<p class="is-center">Radar Chart</p>
 			</Col>
+
 			<Col size="6">
-				<svg use:Pie={doughnut}></svg>
-				<hr>
-				<p class="is-center">Doughnut Chart  <code>innerRadius is set to 0.5</code> </p>
-			</Col>
-			<Col size="6">
-				<svg use:Line={line}></svg>
-				<hr>
-				<p class="is-center">Line Chart </p>
+			<Linechart  options={line_chart} />
+			<hr>
+			<p class="is-center">Line Chart </p>
 			</Col>
 		</Row>
 
 	</Container>
 
-
+ <!-- <Chart type="pie" options={pie_chart}></Chart> -->
 </main>

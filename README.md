@@ -1,6 +1,6 @@
-# chart.xkcd on svelte
+# chart.xkcd-svelte
 
-Svelte integration using actions.
+## Svelte wrapper around [chart.xkcd](https://github.com/timqian/chart.xkcd)
 
 Check [chart.xkcd](https://github.com/timqian/chart.xkcd) for detailed documentation.
 
@@ -9,9 +9,12 @@ Check [chart.xkcd](https://github.com/timqian/chart.xkcd) for detailed documenta
 
 docs for configurations you can find in the official library [page](https://timqian.com/chart.xkcd/)
 
-## Usage
+## Dependencies
+`chart.xkcd@^1.1.12` must be installed to use this library
 
-Install `npm i chart.xkcd`
+## Quick Start
+
+Install `npm i chart.xkcd-svelte`
 
 ```js
 import chartXkcd from 'chart.xkcd';

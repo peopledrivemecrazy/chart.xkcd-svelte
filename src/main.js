@@ -1,6 +1,6 @@
-import Charts from './Charts.svelte';
+import App from './App.svelte';
 
-const app = new Charts({
+const app = new App({
 	target: document.body,
 
 });

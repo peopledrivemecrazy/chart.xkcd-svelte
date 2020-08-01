@@ -1,9 +1,8 @@
 <script>
     import chartXkcd from 'chart.xkcd';
-    import {Pie} from './charts'
+    import {Bar} from './charts'
     export let options
-
 
 </script>
 
-<svg use:Pie={options}></svg>
+<svg use:Bar={options}></svg>
