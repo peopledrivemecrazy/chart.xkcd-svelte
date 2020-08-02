@@ -17,23 +17,27 @@ docs for configurations you can find in the official library [page](https://timq
 Install `npm i chart.xkcd-svelte`
 
 ```js
-<script>
-import chartXkcd from 'chart.xkcd';
-import Chart from "chart.xkcd-svelte";
 
-	let bar_chart = {
-		title: 'github stars VS patron number', // optional
+<script>
+
+import Chart from 'chart.xkcd-svelte';
+import chartXkcd from 'chart.xkcd';
+	
+let options = {
+		title: 'What people think', // optional
 		data: {
-			labels: ['github stars', 'patrons'],
+			labels: ['work', 'sleep', 'social'],
 			datasets: [{
-				data: [10, 5]
+				data: [30, 10, 60],
 			}],
 		},
 		options: { // optional
-			yTickCount: 2,
+			innerRadius: 0,
+			legendPosition: chartXkcd.config.positionType.upLeft,
 		},
 	}
+let type = "pie";
 </script>
+<Chart type={type} options={options} />
 
-<Chart type="bar" options={bar_chart}></Chart>
 ```

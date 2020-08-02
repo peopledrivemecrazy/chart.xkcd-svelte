@@ -1,6 +1,5 @@
 {
-  "name": "svelte-app",
-  "version": "1.0.0",
+  "name": "chart.xkcd-svelte",
   "scripts": {
     "build": "rollup -c",
     "dev": "rollup -c -w",
@@ -20,6 +19,19 @@
   },
   "dependencies": {
     "chart.xkcd": "^1.1.13",
+    "chart.xkcd-svelte": "^1.0.7",
     "sirv-cli": "^0.4.4"
-  }
+  },
+  "description": "Svelte Wrapper for chart.xkcd",
+  "version": "1.0.7",
+  "author": "Shriji Kondan",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/peopledrivemecrazy/chart.xkcd-svelte.git"
+  },
+  "bugs": {
+    "url": "https://github.com/peopledrivemecrazy/chart.xkcd-svelte/issues"
+  },
+  "homepage": "https://github.com/peopledrivemecrazy/chart.xkcd-svelte#readme"
 }

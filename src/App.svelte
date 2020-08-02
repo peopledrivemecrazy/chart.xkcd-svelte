@@ -1,5 +1,7 @@
 <script>
+	import Chart from "chart.xkcd-svelte";
 	import chartXkcd from 'chart.xkcd';
+    import "chota";
 	import "chota";
 	import {
 		Row,
@@ -7,15 +9,7 @@
 		Container,
 	} from 'svelte-chota';
 
-	import Chart from './Chart.svelte'
-
-	import Piechart from './Piechart.svelte';
-	import Barchart from './Barchart.svelte';
-	import XYchart from './XYchart.svelte';
-	import StackedBarchart from './StackedBarchart.svelte';
-	import Radarchart from './Radarchart.svelte';
-	import Linechart from './Linechart.svelte';
-
+	let available_types = ["pie","bar","stacked","XY","radar","line"]
 	let bar_chart = {
 		title: 'github stars VS patron number', // optional
 		data: {
@@ -151,8 +145,8 @@
 			legendPosition: chartXkcd.config.positionType.upLeft
 		}
 	}
-</script>
 
+</script>
 
 
 <main>
@@ -160,40 +154,54 @@
 		<Row>
 			<Col>
 			<p>
-				A svelte wrapper for <a href="https://timqian.com/chart.xkcd">Tim Qian XKCD charts</a>. To use in <a href="https://www.npmjs.com/package/chart.xkcd-svelte">svelte</a>.
+				A svelte wrapper for <a href="https://timqian.com/chart.xkcd">Tim Qian XKCD charts</a>. To use in <a href="https://www.npmjs.com/package/chart.xkcd-svelte">svelte</a>. For bugs and suggestions please file issue <a href="https://github.com/peopledrivemecrazy/chart.xkcd-svelte">here</a>
 			</p>
+			
+			<p>Available <code>types</code></p>
+			<ul>
+				{#each available_types as type }
+					<li>{type}</li>
+				{/each}
+			</ul>
+
+
+			<p>General usage in svelte</p>
+			<p class="text-success">
+				&lt;Chart type="<code>type</code>" <code>options</code> /&gt;
+			</p>
+			<p>For <code>options</code> follow <a href="https://timqian.com/chart.xkcd">xkcd.charts</a></p>
 			</Col>
 		</Row>
 		<hr>
 		<Row>
 			<Col size="6">
-			<Barchart  options={bar_chart} />
+			<Chart type="bar" options={bar_chart} />
 			<hr>
 			<p class="is-center">Bar Chart</p>
 			</Col>
 			<Col size="6">
-			<XYchart  options={xy_chart} />
+			<Chart type="XY" options={xy_chart} />
 			<hr>
 			<p class="is-center">XY Chart</p>
 			</Col>
 			<Col size="6">
-			<Piechart  options={pie_chart} />
+			<Chart type="pie" options={pie_chart} />
 			<hr>
 			<p class="is-center">Pie Chart</p>
 			</Col>
 			<Col size="6">
-			<StackedBarchart  options={stacked_chart} />
+			<Chart type="stacked" options={stacked_chart} />
 			<hr>
 			<p class="is-center">Stacked Bar Chart</p>
 			</Col>
 			<Col size="6">
-			<Radarchart  options={radar_chart} />
+			<Chart type="radar" options={radar_chart} />
 			<hr>
 			<p class="is-center">Radar Chart</p>
 			</Col>
 
 			<Col size="6">
-			<Linechart  options={line_chart} />
+			<Chart type="line" options={line_chart} />
 			<hr>
 			<p class="is-center">Line Chart </p>
 			</Col>
@@ -201,5 +209,4 @@
 
 	</Container>
 
- <!-- <Chart type="pie" options={pie_chart}></Chart> -->
 </main>
