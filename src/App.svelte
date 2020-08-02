@@ -145,7 +145,12 @@
 			legendPosition: chartXkcd.config.positionType.upLeft
 		}
 	}
-
+	let sample = {
+		title: 'chart title',
+		data:'data set',
+		labels:'labels',
+		options:'refer xkcd.chart'
+	}
 </script>
 
 
@@ -163,13 +168,24 @@
 					<li>{type}</li>
 				{/each}
 			</ul>
-
-
-			<p>General usage in svelte</p>
-			<p class="text-success">
-				&lt;Chart type="<code>type</code>" <code>options</code> /&gt;
-			</p>
-			<p>For <code>options</code> follow <a href="https://timqian.com/chart.xkcd">xkcd.charts</a></p>
+			<p><a href="https://github.com/peopledrivemecrazy/chart.xkcd-svelte#quick-start">General Usage</a></p>
+			<pre>npm i chart.xkcd-svelte</pre><br>
+			</Col>
+			<Col>
+			<p>Template for your svelte</p>
+				<pre>
+&lt;script&gt;
+import Chart from 'chart.xkcd-svelte';
+import chartXkcd from 'chart.xkcd';
+let type = "bar";
+let options={JSON.stringify(sample,null,1)}
+&lt;/script&gt;
+&lt;Chart type="<code>bar</code>" options={"{"}<code>options</code>{"}"} /&gt;
+				</pre>
+				<p class="text-success">
+					
+				</p>
+				<p>For <code>options</code> follow <a href="https://timqian.com/chart.xkcd">xkcd.charts</a></p>
 			</Col>
 		</Row>
 		<hr>
